@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Student Mark Predictor</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0b0f1a;
+    --surface: #111827;
+    --card: #162032;
+    --border: rgba(99,182,255,0.13);
+    --border-hover: rgba(99,182,255,0.32);
+    --accent: #4fa3e8;
+    --accent2: #38c9a0;
+    --accent3: #f5a623;
+    --danger: #e85c5c;
+    --text: #e8f0fe;
+    --muted: #7a90b0;
+    --font: 'Sora', sans-serif;
+    --mono: 'JetBrains Mono', monospace;
+    --radius: 14px;
+    --radius-sm: 8px;
+    --glow: 0 0 24px rgba(79,163,232,0.18);
+  }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+    background-image:
+      radial-gradient(ellipse 60% 40% at 80% 10%, rgba(56,201,160,0.07) 0%, transparent 70%),
+      radial-gradient(ellipse 50% 35% at 10% 85%, rgba(79,163,232,0.07) 0%, transparent 60%);
+  }
+
+  /* ── Header ── */
+  header {
+    padding: 2.5rem 2rem 1.5rem;
+    text-align: center;
+    position: relative;
+  }
+  .header-tag {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent2);
+    background: rgba(56,201,160,0.1);
+    border: 1px solid rgba(56,201,160,0.25);
+    padding: 4px 14px;
+    border-radius: 999px;
+    margin-bottom: 1rem;
+  }
+  h1 {
+    font-size: clamp(1.8rem, 4vw, 2.8rem);
+    font-weight: 700;
+    background: linear-gradient(135deg, #e8f0fe 30%, #4fa3e8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1.15;
+    margin-bottom: 0.5rem;
+  }
+  .subtitle {
+    color: var(--muted);
+    font-size: 0.95rem;
+    font-weight: 300;
+  }
+
+  /* ── Layout ── */
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 1.5rem 4rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+  }
+  @media (max-width: 720px) {
+    .container { grid-template-columns: 1fr; }
+  }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.75rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .card:hover { border-color: var(--border-hover); box-shadow: var(--glow); }
+  .card-title {
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-title::before {
+    content: '';
+    display: inline-block;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    flex-shrink: 0;
+  }
+  .full-width { grid-column: 1 / -1; }
+
+  /* ── Form inputs ── */
+  .field-group { display: flex; flex-direction: column; gap: 1rem; }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  label { font-size: 0.82rem; color: var(--muted); font-weight: 400; }
+  input[type="number"], select {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 0.95rem;
+    padding: 0.6rem 0.85rem;
+    outline: none;
+    transition: border-color 0.2s, background 0.2s;
+    width: 100%;
+    -moz-appearance: textfield;
+  }
+  input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+  input[type="number"]:focus, select:focus {
+    border-color: var(--accent);
+    background: rgba(79,163,232,0.06);
+  }
+  select option { background: #162032; }
+
+  /* Subjects grid */
+  .subjects-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+  @media (max-width: 480px) { .subjects-grid { grid-template-columns: 1fr; } }
+
+  .subject-row {
+    background: rgba(255,255,255,0.025);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 0.85rem;
+    transition: border-color 0.15s;
+  }
+  .subject-row:hover { border-color: var(--border-hover); }
+  .subject-name {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--accent2);
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .mark-inputs { display: flex; gap: 8px; }
+  .mark-inputs input { flex: 1; min-width: 0; font-size: 0.85rem; padding: 0.45rem 0.6rem; }
+  .mark-label { font-size: 0.7rem; color: var(--muted); margin-top: 2px; }
+
+  /* ── Sliders ── */
+  .slider-group { display: flex; flex-direction: column; gap: 1.1rem; }
+  .slider-row { display: flex; flex-direction: column; gap: 6px; }
+  .slider-header { display: flex; justify-content: space-between; align-items: center; }
+  .slider-label { font-size: 0.82rem; color: var(--muted); }
+  .slider-val {
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    color: var(--accent);
+    font-weight: 600;
+    min-width: 36px;
+    text-align: right;
+  }
+  input[type="range"] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 4px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.1);
+    outline: none;
+    cursor: pointer;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 2px solid var(--bg);
+    box-shadow: 0 0 8px rgba(79,163,232,0.5);
+    cursor: pointer;
+    transition: transform 0.15s;
+  }
+  input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+
+  /* ── Predict button ── */
+  .btn-predict {
+    width: 100%;
+    padding: 1rem;
+    font-family: var(--font);
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: #fff;
+    background: linear-gradient(135deg, #1a6fba, #38c9a0);
+    border: none;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.15s;
+    position: relative;
+    overflow: hidden;
+  }
+  .btn-predict::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: rgba(255,255,255,0);
+    transition: background 0.2s;
+  }
+  .btn-predict:hover::after { background: rgba(255,255,255,0.08); }
+  .btn-predict:active { transform: scale(0.98); }
+
+  /* ── Result panel ── */
+  .result-panel {
+    display: none;
+    animation: fadeUp 0.4s ease;
+  }
+  .result-panel.show { display: block; }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .result-hero {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  .score-ring {
+    position: relative;
+    width: 100px; height: 100px;
+    flex-shrink: 0;
+  }
+  .score-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+  .score-ring circle { fill: none; stroke-width: 8; }
+  .ring-bg { stroke: rgba(255,255,255,0.08); }
+  .ring-fg { stroke-dasharray: 251.2; stroke-dashoffset: 251.2; stroke-linecap: round; transition: stroke-dashoffset 0.9s ease; }
+  .ring-label {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+  }
+  .ring-score {
+    font-family: var(--mono);
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1;
+  }
+  .ring-max { font-size: 0.65rem; color: var(--muted); }
+
+  .result-info { flex: 1; }
+  .grade-badge {
+    display: inline-block;
+    font-size: 1.4rem;
+    font-weight: 700;
+    font-family: var(--mono);
+    padding: 0.3rem 1rem;
+    border-radius: var(--radius-sm);
+    margin-bottom: 0.5rem;
+  }
+  .result-status { font-size: 0.9rem; color: var(--muted); line-height: 1.5; }
+  .result-remark { font-size: 1rem; font-weight: 600; margin-bottom: 4px; }
+
+  /* subject bars */
+  .bars-grid { display: flex; flex-direction: column; gap: 0.75rem; }
+  .bar-row { display: flex; align-items: center; gap: 10px; }
+  .bar-name { font-size: 0.75rem; color: var(--muted); width: 90px; flex-shrink: 0; }
+  .bar-track {
+    flex: 1; height: 6px;
+    background: rgba(255,255,255,0.07);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+  .bar-fill {
+    height: 100%;
+    border-radius: 999px;
+    transition: width 0.7s ease;
+  }
+  .bar-pct { font-family: var(--mono); font-size: 0.75rem; color: var(--text); width: 36px; text-align: right; }
+
+  /* stats row */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+    margin-top: 1.25rem;
+  }
+  .stat-box {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 0.75rem;
+    text-align: center;
+  }
+  .stat-val { font-family: var(--mono); font-size: 1.1rem; font-weight: 600; }
+  .stat-key { font-size: 0.7rem; color: var(--muted); margin-top: 2px; }
+
+  /* tips */
+  .tips-list { list-style: none; display: flex; flex-direction: column; gap: 0.65rem; }
+  .tips-list li {
+    font-size: 0.85rem;
+    color: var(--muted);
+    padding-left: 1.1rem;
+    position: relative;
+    line-height: 1.55;
+  }
+  .tips-list li::before {
+    content: '→';
+    position: absolute; left: 0;
+    color: var(--accent);
+    font-size: 0.75rem;
+  }
+
+  /* reset */
+  .btn-reset {
+    margin-top: 1rem;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: var(--font);
+    font-size: 0.82rem;
+    padding: 0.5rem 1rem;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: border-color 0.2s, color 0.2s;
+  }
+  .btn-reset:hover { border-color: var(--border-hover); color: var(--text); }
+
+  /* error */
+  .error-msg {
+    display: none;
+    color: var(--danger);
+    font-size: 0.8rem;
+    margin-top: 0.5rem;
+  }
+  .error-msg.show { display: block; }
+
+  /* grade colours */
+  .g-o  { background: rgba(56,201,160,0.15); color: #38c9a0; border: 1px solid rgba(56,201,160,0.3); }
+  .g-a  { background: rgba(79,163,232,0.15); color: #4fa3e8; border: 1px solid rgba(79,163,232,0.3); }
+  .g-b  { background: rgba(245,166,35,0.15); color: #f5a623; border: 1px solid rgba(245,166,35,0.3); }
+  .g-c  { background: rgba(200,140,60,0.12); color: #d48e3a; border: 1px solid rgba(200,140,60,0.25); }
+  .g-d  { background: rgba(232,92,92,0.12); color: var(--danger); border: 1px solid rgba(232,92,92,0.25); }
+  .g-f  { background: rgba(232,92,92,0.18); color: var(--danger); border: 1px solid rgba(232,92,92,0.35); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-tag">AI-Powered Academic Tool</div>
+  <h1>Student Mark Predictor</h1>
+  <p class="subtitle">Enter your scores and factors to predict your final mark &amp; grade</p>
+</header>
+
+<div class="container">
+
+  <!-- Student Info -->
+  <div class="card">
+    <div class="card-title">Student Info</div>
+    <div class="field-group">
+      <div class="field">
+        <label>Student Name</label>
+        <input type="text" id="studentName" placeholder="e.g. Arjun Sharma"
+          style="background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:var(--font);font-size:0.95rem;padding:0.6rem 0.85rem;outline:none;width:100%;transition:border-color 0.2s;"/>
+      </div>
+      <div class="field">
+        <label>Class / Grade</label>
+        <select id="classLevel">
+          <option value="10">Class 10</option>
+          <option value="11">Class 11</option>
+          <option value="12" selected>Class 12</option>
+          <option value="ug">Undergraduate</option>
+          <option value="pg">Postgraduate</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Exam Type</label>
+        <select id="examType">
+          <option value="mid">Mid-Term (50 marks)</option>
+          <option value="final" selected>Final Exam (100 marks)</option>
+          <option value="board">Board Exam (100 marks)</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Behavioural Factors -->
+  <div class="card">
+    <div class="card-title">Performance Factors</div>
+    <div class="slider-group">
+      <div class="slider-row">
+        <div class="slider-header">
+          <span class="slider-label">Study Hours / Day</span>
+          <span class="slider-val" id="studyVal">4 hrs</span>
+        </div>
+        <input type="range" id="studyHours" min="0" max="12" value="4" step="0.5"/>
+      </div>
+      <div class="slider-row">
+        <div class="slider-header">
+          <span class="slider-label">Attendance %</span>
+          <span class="slider-val" id="attendVal">85%</span>
+        </div>
+        <input type="range" id="attendance" min="40" max="100" value="85" step="1"/>
+      </div>
+      <div class="slider-row">
+        <div class="slider-header">
+          <span class="slider-label">Assignment Completion %</span>
+          <span class="slider-val" id="assignVal">80%</span>
+        </div>
+        <input type="range" id="assignment" min="0" max="100" value="80" step="5"/>
+      </div>
+      <div class="slider-row">
+        <div class="slider-header">
+          <span class="slider-label">Sleep Quality (1–10)</span>
+          <span class="slider-val" id="sleepVal">7</span>
+        </div>
+        <input type="range" id="sleepQuality" min="1" max="10" value="7" step="1"/>
+      </div>
+      <div class="slider-row">
+        <div class="slider-header">
+          <span class="slider-label">Stress Level (1 = Low, 10 = High)</span>
+          <span class="slider-val" id="stressVal">5</span>
+        </div>
+        <input type="range" id="stressLevel" min="1" max="10" value="5" step="1"/>
+      </div>
+    </div>
+  </div>
+
+  <!-- Subject Marks -->
+  <div class="card full-width">
+    <div class="card-title">Subject Marks (Internal / Test Scores)</div>
+    <div class="subjects-grid" id="subjectsGrid"></div>
+    <p class="error-msg" id="markError">Please fill in at least one subject's marks correctly (0–100).</p>
+  </div>
+
+  <!-- Predict Button -->
+  <div class="card full-width" style="padding:1.25rem;">
+    <button class="btn-predict" onclick="predict()">⚡ Predict My Final Mark</button>
+  </div>
+
+  <!-- Result Panel -->
+  <div class="card result-panel full-width" id="resultPanel">
+    <div class="card-title">Prediction Result</div>
+
+    <div class="result-hero">
+      <div class="score-ring">
+        <svg viewBox="0 0 90 90">
+          <circle class="ring-bg" cx="45" cy="45" r="40"/>
+          <circle class="ring-fg" id="ringFg" cx="45" cy="45" r="40" stroke="#4fa3e8"/>
+        </svg>
+        <div class="ring-label">
+          <span class="ring-score" id="ringScore">--</span>
+          <span class="ring-max" id="ringMax">/100</span>
+        </div>
+      </div>
+      <div class="result-info">
+        <div class="grade-badge" id="gradeBadge">--</div>
+        <div class="result-remark" id="resultRemark"></div>
+        <div class="result-status" id="resultStatus"></div>
+      </div>
+    </div>
+
+    <div class="bars-grid" id="barsGrid"></div>
+
+    <div class="stats-row">
+      <div class="stat-box">
+        <div class="stat-val" id="statAvg">--</div>
+        <div class="stat-key">Avg Score</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val" id="statHighest">--</div>
+        <div class="stat-key">Strongest Subject</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val" id="statLowest">--</div>
+        <div class="stat-key">Needs Attention</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tips -->
+  <div class="card result-panel full-width" id="tipsPanel">
+    <div class="card-title">Personalised Recommendations</div>
+    <ul class="tips-list" id="tipsList"></ul>
+    <button class="btn-reset" onclick="resetForm()">↺ Start Over</button>
+  </div>
+
+</div>
+
+<script>
+const SUBJECTS = [
+  { id: 'math',    name: 'Mathematics' },
+  { id: 'sci',     name: 'Science' },
+  { id: 'eng',     name: 'English' },
+  { id: 'sst',     name: 'Social Studies' },
+  { id: 'cs',      name: 'Computer Sc.' },
+  { id: 'lang',    name: '2nd Language' },
+];
+
+/* Build subject input grid */
+const grid = document.getElementById('subjectsGrid');
+SUBJECTS.forEach(s => {
+  const div = document.createElement('div');
+  div.className = 'subject-row';
+  div.innerHTML = `
+    <div class="subject-name">${s.name}</div>
+    <div class="mark-inputs">
+      <div style="flex:1">
+        <input type="number" id="${s.id}T1" min="0" max="100" placeholder="Test 1"/>
+        <div class="mark-label">Test 1</div>
+      </div>
+      <div style="flex:1">
+        <input type="number" id="${s.id}T2" min="0" max="100" placeholder="Test 2"/>
+        <div class="mark-label">Test 2</div>
+      </div>
+      <div style="flex:1">
+        <input type="number" id="${s.id}T3" min="0" max="100" placeholder="Test 3"/>
+        <div class="mark-label">Test 3 (opt)</div>
+      </div>
+    </div>`;
+  grid.appendChild(div);
+});
+
+/* Slider live update */
+function sliderBind(sliderId, displayId, suffix) {
+  const el = document.getElementById(sliderId);
+  const out = document.getElementById(displayId);
+  el.addEventListener('input', () => out.textContent = el.value + suffix);
+}
+sliderBind('studyHours',  'studyVal',  ' hrs');
+sliderBind('attendance',  'attendVal', '%');
+sliderBind('assignment',  'assignVal', '%');
+sliderBind('sleepQuality','sleepVal',  '');
+sliderBind('stressLevel', 'stressVal', '');
+
+/* Grade logic */
+function getGrade(score, max) {
+  const pct = score / max * 100;
+  if (pct >= 91) return { letter:'O',  remark:'Outstanding!',       cls:'g-o', color:'#38c9a0' };
+  if (pct >= 81) return { letter:'A+', remark:'Excellent Work!',    cls:'g-a', color:'#4fa3e8' };
+  if (pct >= 71) return { letter:'A',  remark:'Great Performance',  cls:'g-a', color:'#4fa3e8' };
+  if (pct >= 61) return { letter:'B+', remark:'Good Going',         cls:'g-b', color:'#f5a623' };
+  if (pct >= 51) return { letter:'B',  remark:'Satisfactory',       cls:'g-b', color:'#f5a623' };
+  if (pct >= 41) return { letter:'C',  remark:'Needs Improvement',  cls:'g-c', color:'#d48e3a' };
+  if (pct >= 35) return { letter:'D',  remark:'Borderline Pass',    cls:'g-d', color:'#e85c5c' };
+  return           { letter:'F',  remark:'At Risk – Study Hard',cls:'g-f', color:'#e85c5c' };
+}
+
+/* Bar colour by pct */
+function barColor(pct) {
+  if (pct >= 80) return '#38c9a0';
+  if (pct >= 60) return '#4fa3e8';
+  if (pct >= 45) return '#f5a623';
+  return '#e85c5c';
+}
+
+/* Main prediction */
+function predict() {
+  const examMax = document.getElementById('examType').value === 'mid' ? 50 : 100;
+
+  /* collect subject avgs */
+  let subjectData = [];
+  let validCount = 0;
+  SUBJECTS.forEach(s => {
+    const v1 = parseFloat(document.getElementById(s.id + 'T1').value);
+    const v2 = parseFloat(document.getElementById(s.id + 'T2').value);
+    const v3 = parseFloat(document.getElementById(s.id + 'T3').value);
+    const vals = [v1, v2, v3].filter(v => !isNaN(v) && v >= 0 && v <= 100);
+    if (vals.length > 0) {
+      const avg = vals.reduce((a,b) => a+b, 0) / vals.length;
+      subjectData.push({ name: s.name, avg });
+      validCount++;
+    } else {
+      subjectData.push({ name: s.name, avg: null });
+    }
+  });
+
+  if (validCount === 0) {
+    document.getElementById('markError').classList.add('show');
+    return;
+  }
+  document.getElementById('markError').classList.remove('show');
+
+  /* raw academic score (0–100) */
+  const filled = subjectData.filter(d => d.avg !== null);
+  const rawAvg = filled.reduce((a, d) => a + d.avg, 0) / filled.length;
+
+  /* factor multipliers */
+  const study     = parseFloat(document.getElementById('studyHours').value);
+  const attend    = parseFloat(document.getElementById('attendance').value);
+  const assignPct = parseFloat(document.getElementById('assignment').value);
+  const sleep     = parseFloat(document.getElementById('sleepQuality').value);
+  const stress    = parseFloat(document.getElementById('stressLevel').value);
+
+  const studyBonus  = Math.min((study / 10) * 6, 6);         // max +6
+  const attendBonus = ((attend - 40) / 60) * 5;              // max +5
+  const assignBonus = (assignPct / 100) * 4;                 // max +4
+  const sleepBonus  = ((sleep - 1) / 9) * 3;                 // max +3
+  const stressPen   = -((stress - 1) / 9) * 4;               // max -4
+
+  const totalBonus = studyBonus + attendBonus + assignBonus + sleepBonus + stressPen;
+  let predicted = rawAvg + totalBonus;
+  predicted = Math.min(examMax, Math.max(0, predicted));
+  predicted = Math.round(predicted * 10) / 10;
+
+  const pct  = predicted / examMax * 100;
+  const grade = getGrade(predicted, examMax);
+
+  /* update ring */
+  const circ = 2 * Math.PI * 40;
+  const offset = circ * (1 - pct / 100);
+  const ring = document.getElementById('ringFg');
+  ring.style.strokeDashoffset = circ;
+  ring.style.stroke = grade.color;
+  setTimeout(() => ring.style.strokeDashoffset = offset, 80);
+
+  document.getElementById('ringScore').textContent = predicted.toFixed(1);
+  document.getElementById('ringMax').textContent   = '/' + examMax;
+
+  const badge = document.getElementById('gradeBadge');
+  badge.textContent = grade.letter;
+  badge.className   = 'grade-badge ' + grade.cls;
+
+  document.getElementById('resultRemark').textContent = grade.remark;
+  const name = document.getElementById('studentName').value.trim() || 'Student';
+  document.getElementById('resultStatus').textContent =
+    `${name} is predicted to score ${predicted.toFixed(1)} / ${examMax} (${pct.toFixed(1)}%) based on current performance and study habits.`;
+
+  /* bars */
+  const barsGrid = document.getElementById('barsGrid');
+  barsGrid.innerHTML = '';
+  subjectData.forEach(d => {
+    if (d.avg === null) return;
+    const p = Math.round(d.avg);
+    const row = document.createElement('div');
+    row.className = 'bar-row';
+    row.innerHTML = `
+      <span class="bar-name">${d.name}</span>
+      <div class="bar-track"><div class="bar-fill" style="width:0%;background:${barColor(p)};" data-pct="${p}"></div></div>
+      <span class="bar-pct">${p}%</span>`;
+    barsGrid.appendChild(row);
+  });
+  setTimeout(() => {
+    document.querySelectorAll('.bar-fill').forEach(el => {
+      el.style.width = el.dataset.pct + '%';
+    });
+  }, 100);
+
+  /* stats */
+  const sortedFilled = [...filled].sort((a,b) => b.avg - a.avg);
+  document.getElementById('statAvg').textContent     = rawAvg.toFixed(1) + '%';
+  document.getElementById('statHighest').textContent = sortedFilled[0].name;
+  document.getElementById('statLowest').textContent  = sortedFilled[sortedFilled.length-1].name;
+
+  /* tips */
+  const tips = [];
+  if (study < 3)    tips.push('Increase daily study time to at least 4–5 hours for meaningful improvement.');
+  if (attend < 75)  tips.push('Your attendance is low. Regular class attendance is strongly linked to better scores.');
+  if (assignPct < 70) tips.push('Submit all assignments — they reinforce understanding and often improve exam performance.');
+  if (sleep < 6)    tips.push('Poor sleep reduces memory retention. Aim for 7–8 hours of quality sleep each night.');
+  if (stress > 7)   tips.push('High stress hurts performance. Try mindfulness, breaks, and talking to a counsellor.');
+  if (sortedFilled.length > 0) {
+    const weak = sortedFilled[sortedFilled.length-1];
+    if (weak.avg < 60) tips.push(`Focus extra revision on ${weak.name} — it is your lowest-scoring subject.`);
+  }
+  if (pct >= 91) tips.push('Outstanding! Keep this momentum. Consider mentoring peers to reinforce your own knowledge.');
+  else if (pct >= 75) tips.push('You are performing well. Practice previous-year papers to push into the top range.');
+  else if (pct < 50) tips.push('Consider forming a study group or seeking help from your teacher for weak subjects.');
+  if (tips.length === 0) tips.push('Great balance across all factors! Stay consistent and review notes regularly.');
+
+  const tipsList = document.getElementById('tipsList');
+  tipsList.innerHTML = tips.map(t => `<li>${t}</li>`).join('');
+
+  /* show panels */
+  document.getElementById('resultPanel').classList.add('show');
+  document.getElementById('tipsPanel').classList.add('show');
+  document.getElementById('resultPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function resetForm() {
+  document.querySelectorAll('input[type="number"]').forEach(el => el.value = '');
+  document.getElementById('studentName').value = '';
+  document.getElementById('studyHours').value = 4;
+  document.getElementById('studyVal').textContent = '4 hrs';
+  document.getElementById('attendance').value = 85;
+  document.getElementById('attendVal').textContent = '85%';
+  document.getElementById('assignment').value = 80;
+  document.getElementById('assignVal').textContent = '80%';
+  document.getElementById('sleepQuality').value = 7;
+  document.getElementById('sleepVal').textContent = '7';
+  document.getElementById('stressLevel').value = 5;
+  document.getElementById('stressVal').textContent = '5';
+  document.getElementById('resultPanel').classList.remove('show');
+  document.getElementById('tipsPanel').classList.remove('show');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+</script>
+</body>
+</html>
